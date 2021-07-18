@@ -159,7 +159,7 @@ export const MapDraw = (props) => {
   var layer = e.target;
   layer.setStyle({
    fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-   fillOpacity: 0.1,
+   fillOpacity: 0.5,
   });
  };
 
@@ -223,11 +223,11 @@ export const MapDraw = (props) => {
  const style = (feature) => {
   return {
    fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-   weight: 2,
+   weight: 3,
    opacity: 1,
-   color: colorJson['pink']['400'],
+   color: 'blue',
    dashArray: '3',
-   fillOpacity: 0.1,
+   fillOpacity: 0.5,
   };
  };
 
@@ -295,8 +295,9 @@ export const MapDraw = (props) => {
       />
       {/* ) : null} */}
 
-      <GeoJSON data={mapJson} onEachFeature={onEachFeature} style={style} />
+      <GeoJSON data={geoJson} onEachFeature={onEachFeature} style={style} />
      </Map>
+
      <button
       onClick={() => setSatellite(!satellite)}
       className={`position-absolute btn ${
