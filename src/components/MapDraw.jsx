@@ -8,6 +8,7 @@ import {
  Popup,
  Marker,
  GeoJSON,
+ Tooltip,
 } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import ReactLeafletGoogleLayer from 'react-leaflet-google-layer';
@@ -18,12 +19,14 @@ import './assets/leaflet.draw.css';
 import geoJson from './geo.json';
 import geoDisJson from './geoDis.json';
 import colorJson from './color.json';
+import SimpleModal from './CreateLand';
 
 // Material components
 import { makeStyles } from '@material-ui/core';
 import { useEffect } from 'react';
 
 import { Land as sellLand } from './Api';
+import PupupCom from './PupupCom.jsx';
 
 const useStyles = makeStyles((theme) => ({
  map: {
@@ -57,6 +60,8 @@ export const MapDraw = (props) => {
  const [searchId, setSearchId] = useState('');
  const [keyId, setKeyId] = useState('');
  const [mapJson, setMapJson] = useState({});
+ const [zo, setZo] = useState(8);
+ const [onCreateL, setOnCreateL] = useState(false);
 
  useEffect(() => {
   if (searchId) {
@@ -98,12 +103,13 @@ export const MapDraw = (props) => {
  }, [addr, searchId]);
 
  useEffect(() => {
-  if (satellite) {
-   setMapJson(geoDisJson);
-  } else {
+  if (zo === 8) {
    setMapJson(geoJson);
+  } else {
+   setMapJson(geoDisJson);
   }
- }, [satellite]);
+  console.log(zo);
+ }, [zo]);
 
  const _onCreated = (e) => {
   console.log(e);
@@ -116,6 +122,8 @@ export const MapDraw = (props) => {
     { id: _leaflet_id, latlngs: layer.getLatLngs()[0] },
    ]);
   }
+
+  setOnCreateL(true);
  };
  const _onEdited = (e) => {
   console.log(e);
@@ -150,7 +158,7 @@ export const MapDraw = (props) => {
  const highlightFeature = (e) => {
   var layer = e.target;
   layer.setStyle({
-   fillColor: 'black',
+   fillColor: 'transparent',
    fillOpacity: 0,
   });
  };
@@ -159,32 +167,41 @@ export const MapDraw = (props) => {
   var layer = e.target;
   layer.setStyle({
    fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-   fillOpacity: 0.5,
+   fillOpacity: 0.3,
   });
  };
 
- const clickToFeature = (e) => {
-  var layer = e.target;
-  console.log('I clicked on ', layer);
+ const clickToFeature = (e, layer) => {
+  var laye = e.target;
+  console.log('I clicked on ', laye);
+  laye.setStyle({
+   fillColor: 'yellow',
+   fillOpacity: 1,
+  });
+
   layer.setStyle({
-   fillColor: 'black',
+   fillColor: 'transparent',
    fillOpacity: 0,
   });
   let lat1 = (layer._bounds._northEast.lat + layer._bounds._southWest.lat) / 2;
   let lng1 = (layer._bounds._northEast.lng + layer._bounds._southWest.lng) / 2;
+
   setPosi({
    ...posi,
    posi: [lat1, lng1],
-   zoom: 10,
+   zoom: zo > 10 ? zo : 10,
   });
+  console.log(zo);
  };
 
  const onEachFeature = (feature, layer) => {
+  layer.setStyle({
+   fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+  });
   layer.on({
-   click: (e) => clickToFeature(e),
+   click: (e) => clickToFeature(e, layer),
    mouseover: (e) => highlightFeature(e),
    mouseout: (e) => resetHighlight(e),
-   scroll: (e) => console.log(e),
   });
  };
 
@@ -215,19 +232,14 @@ export const MapDraw = (props) => {
   }
  };
 
- function getRandomColor() {
-  var randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
-  return randomColor;
- }
-
  const style = (feature) => {
   return {
-   fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+   //  fillColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
    weight: 3,
    opacity: 1,
-   color: 'blue',
+   color: 'white',
    dashArray: '3',
-   fillOpacity: 0.5,
+   fillOpacity: 0.3,
   };
  };
 
@@ -240,6 +252,8 @@ export const MapDraw = (props) => {
       zoom={posi.zoom}
       zoomControl={true}
       className={classes.map}
+      onzoomstart={(e) => setZo(e.target._zoom)}
+      onzoomend={(e) => setZo(e.target._zoom)}
      >
       <TileLayer
        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -270,17 +284,34 @@ export const MapDraw = (props) => {
        {land &&
         land.map((l) => (
          <div key={l.idLand}>
-          <Polygon className="bg-light" positions={l.coordinates}></Polygon>
-          <Marker
-           onClick={() =>
-            setPosi({
-             ...posi,
-             posi: [l.coordinates[0].lat, l.coordinates[0].lng],
-             zoom: 16,
-            })
-           }
-           position={[l.coordinates[0].lat, l.coordinates[0].lng]}
-          ></Marker>
+          {zo >= 15 ? (
+           <Polygon
+            onClick={() =>
+             setPosi({
+              ...posi,
+              posi: [l.coordinates[0].lat, l.coordinates[0].lng],
+              zoom: 16,
+             })
+            }
+            className="bg-light"
+            positions={l.coordinates}
+           >
+            <Tooltip direction="top">
+             <PupupCom />
+            </Tooltip>
+           </Polygon>
+          ) : (
+           <Marker
+            onClick={() =>
+             setPosi({
+              ...posi,
+              posi: [l.coordinates[0].lat, l.coordinates[0].lng],
+              zoom: 16,
+             })
+            }
+            position={[l.coordinates[0].lat, l.coordinates[0].lng]}
+           ></Marker>
+          )}
          </div>
         ))}
       </FeatureGroup>
@@ -295,7 +326,7 @@ export const MapDraw = (props) => {
       />
       {/* ) : null} */}
 
-      <GeoJSON data={geoJson} onEachFeature={onEachFeature} style={style} />
+      <GeoJSON data={mapJson} onEachFeature={onEachFeature} style={style} />
      </Map>
 
      <button
@@ -345,7 +376,7 @@ export const MapDraw = (props) => {
       ))}
     </div>
    </div>
-
+   <SimpleModal onCreateL={onCreateL} setOnCreateL={setOnCreateL} />
    <pre>{JSON.stringify(mapLayers, 0, 2)}</pre>
   </div>
  );
